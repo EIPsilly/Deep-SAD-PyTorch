@@ -50,11 +50,11 @@ class FashionMNIST_LeNet_Decoder(BaseNet):
 
     def forward(self, x):
         x = self.bn1d2(self.fc3(x))
-        x = x.view(int(x.size(0)), int(128 / 16), 4, 4)
-        x = F.interpolate(F.leaky_relu(x), scale_factor=2)
-        x = self.deconv1(x)
-        x = F.interpolate(F.leaky_relu(self.bn2d3(x)), scale_factor=2)
-        x = self.deconv2(x)
+        x = x.view(int(x.size(0)), int(128 / 16), 4, 4) # (3, 8, 4, 4)
+        x = F.interpolate(F.leaky_relu(x), scale_factor=2) # (3, 8, 8, 8)
+        x = self.deconv1(x) # (3, 32, 8, 8)
+        x = F.interpolate(F.leaky_relu(self.bn2d3(x)), scale_factor=2) # (3, 32, 16, 16)
+        x = self.deconv2(x) # (3, 32, 14, 14)
         x = F.interpolate(F.leaky_relu(self.bn2d4(x)), scale_factor=2)
         x = self.deconv3(x)
         x = torch.sigmoid(x)
@@ -74,3 +74,21 @@ class FashionMNIST_LeNet_Autoencoder(BaseNet):
         x = self.encoder(x)
         x = self.decoder(x)
         return x
+
+if __name__ == "__main__":
+    import os
+    from torchsummary import summary
+    os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    test_input = torch.rand(3, 1, 28, 28).to(device)
+    ae_net = FashionMNIST_LeNet_Autoencoder().to(device)
+    reg = ae_net(test_input)
+    reg
+
+    enc = FashionMNIST_LeNet().to(device)
+    dec = FashionMNIST_LeNet_Decoder().to(device)
+    out = enc(test_input)
+    reg2 = dec(out)
+    reg2
+    summary(enc, (1, 28, 28))
+    summary(dec, [[64]])

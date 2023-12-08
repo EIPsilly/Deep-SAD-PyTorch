@@ -4,7 +4,10 @@ from .cifar10_LeNet import CIFAR10_LeNet, CIFAR10_LeNet_Autoencoder
 from .mlp import MLP, MLP_Autoencoder
 from .vae import VariationalAutoencoder
 from .dgm import DeepGenerativeModel, StackedDeepGenerativeModel
-
+from .resnet import Resnet_Autoencoder
+from torchvision import models
+from .res_encoder import ResNet as resnet_encoder
+from .res_encoder import Bottleneck as Bottleneck_encoder
 
 def build_network(net_name, ae_net=None):
     """Builds the neural network."""
@@ -15,10 +18,12 @@ def build_network(net_name, ae_net=None):
                             'arrhythmia_mlp', 'cardio_mlp', 'satellite_mlp', 'satimage-2_mlp', 'shuttle_mlp',
                             'thyroid_mlp',
                             'arrhythmia_DGM_M2', 'cardio_DGM_M2', 'satellite_DGM_M2', 'satimage-2_DGM_M2',
-                            'shuttle_DGM_M2', 'thyroid_DGM_M2')
+                            'shuttle_DGM_M2', 'thyroid_DGM_M2', "PACS_resnet")
     assert net_name in implemented_networks
 
     net = None
+    if net_name == 'PACS_resnet':
+        net = resnet_encoder(Bottleneck_encoder, [3, 4, 6, 3], return_indices=True, width_per_group = 64 * 2)
 
     if net_name == 'mnist_LeNet':
         net = MNIST_LeNet()
@@ -93,11 +98,13 @@ def build_autoencoder(net_name):
                             'fmnist_LeNet', 'fmnist_DGM_M1M2',
                             'cifar10_LeNet', 'cifar10_DGM_M1M2',
                             'arrhythmia_mlp', 'cardio_mlp', 'satellite_mlp', 'satimage-2_mlp', 'shuttle_mlp',
-                            'thyroid_mlp')
+                            'thyroid_mlp', "PACS_resnet")
 
     assert net_name in implemented_networks
 
     ae_net = None
+    if net_name == 'PACS_resnet':
+        ae_net = Resnet_Autoencoder()
 
     if net_name == 'mnist_LeNet':
         ae_net = MNIST_LeNet_Autoencoder()

@@ -8,6 +8,8 @@ from utils.config import Config
 from utils.visualization.plot_images_grid import plot_images_grid
 from DeepSAD import DeepSAD
 from datasets.main import load_dataset
+from datasets.CIFAR10 import CIFAR10_Data
+from datasets.PACS import PACS_Data
 
 
 ################################################################################
@@ -15,10 +17,10 @@ from datasets.main import load_dataset
 ################################################################################
 @click.command()
 @click.argument('dataset_name', type=click.Choice(['mnist', 'fmnist', 'cifar10', 'arrhythmia', 'cardio', 'satellite',
-                                                   'satimage-2', 'shuttle', 'thyroid']))
+                                                   'satimage-2', 'shuttle', 'thyroid', "cifar10ood", "PACS"]))
 @click.argument('net_name', type=click.Choice(['mnist_LeNet', 'fmnist_LeNet', 'cifar10_LeNet', 'arrhythmia_mlp',
                                                'cardio_mlp', 'satellite_mlp', 'satimage-2_mlp', 'shuttle_mlp',
-                                               'thyroid_mlp']))
+                                               'thyroid_mlp', 'PACS_resnet']))
 @click.argument('xp_path', type=click.Path(exists=True))
 @click.argument('data_path', type=click.Path(exists=True))
 @click.option('--load_config', type=click.Path(exists=True), default=None,
@@ -60,8 +62,8 @@ from datasets.main import load_dataset
               help='Number of threads used for parallelizing CPU operations. 0 means that all resources are used.')
 @click.option('--n_jobs_dataloader', type=int, default=0,
               help='Number of workers for data loading. 0 means that the data will be loaded in the main process.')
-@click.option('--normal_class', type=int, default=0,
-              help='Specify the normal class of the dataset (all other classes are considered anomalous).')
+# @click.option('--normal_class', type=int, default=0,
+#               help='Specify the normal class of the dataset (all other classes are considered anomalous).')
 @click.option('--known_outlier_class', type=int, default=1,
               help='Specify the known outlier class of the dataset for semi-supervised anomaly detection.')
 @click.option('--n_known_outlier_classes', type=int, default=0,
@@ -69,11 +71,19 @@ from datasets.main import load_dataset
                    'If 0, no anomalies are known.'
                    'If 1, outlier class as specified in --known_outlier_class option.'
                    'If > 1, the specified number of outlier classes will be sampled at random.')
+@click.option("--normal_class", multiple=True, type=int, default=[0,1,2,3])
+@click.option("--anomaly_class", multiple=True, type=int, default= [4,5,6])
+@click.option("--contamination_rate", type=float ,default=0.02)
+@click.option("--labeled_rate", type=float, default=0.02)
+@click.option("--train_binary", type=bool, default=True)
+@click.option("--corrupt_type", type=click.Choice(['brightness','contrast','defocus_blur','gaussian_noise', 'origin']), default="brightness")
+@click.option("--cnt", type=int, default=0)
 def main(dataset_name, net_name, xp_path, data_path, load_config, load_model, eta,
          ratio_known_normal, ratio_known_outlier, ratio_pollution, device, seed,
          optimizer_name, lr, n_epochs, lr_milestone, batch_size, weight_decay,
          pretrain, ae_optimizer_name, ae_lr, ae_n_epochs, ae_lr_milestone, ae_batch_size, ae_weight_decay,
-         num_threads, n_jobs_dataloader, normal_class, known_outlier_class, n_known_outlier_classes):
+         num_threads, n_jobs_dataloader, normal_class, known_outlier_class, n_known_outlier_classes,
+         anomaly_class, contamination_rate, labeled_rate, train_binary, corrupt_type, cnt):
     """
     Deep SAD, a method for deep semi-supervised anomaly detection.
 
@@ -82,6 +92,9 @@ def main(dataset_name, net_name, xp_path, data_path, load_config, load_model, et
     :arg XP_PATH: Export path for logging the experiment.
     :arg DATA_PATH: Root path of data.
     """
+    normal_class = list(normal_class)
+    anomaly_class = list(anomaly_class)
+    file_name = f'lr={lr},n_epochs={n_epochs},batch_size={batch_size},ae_lr={ae_lr},ae_n_epochs={ae_n_epochs},ae_batch_size={ae_batch_size},cnt={cnt}'
 
     # Get configuration
     cfg = Config(locals().copy())
@@ -104,7 +117,7 @@ def main(dataset_name, net_name, xp_path, data_path, load_config, load_model, et
 
     # Print experimental setup
     logger.info('Dataset: %s' % dataset_name)
-    logger.info('Normal class: %d' % normal_class)
+    # logger.info('Normal class:' + str(normal_class))
     logger.info('Ratio of labeled normal train samples: %.2f' % ratio_known_normal)
     logger.info('Ratio of labeled anomalous samples: %.2f' % ratio_known_outlier)
     logger.info('Pollution ratio of unlabeled train data: %.2f' % ratio_pollution)
@@ -141,10 +154,23 @@ def main(dataset_name, net_name, xp_path, data_path, load_config, load_model, et
     logger.info('Number of threads: %d' % num_threads)
     logger.info('Number of dataloader workers: %d' % n_jobs_dataloader)
 
+    parameter = {"normal_class" : normal_class,
+                 "anomaly_class" : anomaly_class,
+                 "contamination_rate" : contamination_rate,
+                 "labeled_rate" : labeled_rate,
+                 "seed" : seed,
+                 "train_binary" : train_binary,
+                 "corrupt_type" : corrupt_type,
+                 }
     # Load data
-    dataset = load_dataset(dataset_name, data_path, normal_class, known_outlier_class, n_known_outlier_classes,
-                           ratio_known_normal, ratio_known_outlier, ratio_pollution,
-                           random_state=np.random.RandomState(cfg.settings['seed']))
+    if dataset_name == "cifar10ood":
+        dataset = CIFAR10_Data(parameter)
+    elif dataset_name == "PACS":
+        dataset = PACS_Data(parameter)
+    else:
+        dataset = load_dataset(dataset_name, data_path, normal_class, known_outlier_class, n_known_outlier_classes,
+                            ratio_known_normal, ratio_known_outlier, ratio_pollution,
+                            random_state=np.random.RandomState(cfg.settings['seed']))
     # Log random sample of known anomaly classes if more than 1 class
     if n_known_outlier_classes > 1:
         logger.info('Known anomaly classes: %s' % (dataset.known_outlier_classes,))
@@ -180,7 +206,7 @@ def main(dataset_name, net_name, xp_path, data_path, load_config, load_model, et
                          n_jobs_dataloader=n_jobs_dataloader)
 
         # Save pretraining results
-        deepSAD.save_ae_results(export_json=xp_path + '/ae_results.json')
+        deepSAD.save_ae_results(export_json=xp_path + f'/{file_name},ae_results.json')
 
     # Log training details
     logger.info('Training optimizer: %s' % cfg.settings['optimizer_name'])
@@ -205,9 +231,9 @@ def main(dataset_name, net_name, xp_path, data_path, load_config, load_model, et
     deepSAD.test(dataset, device=device, n_jobs_dataloader=n_jobs_dataloader)
 
     # Save results, model, and configuration
-    deepSAD.save_results(export_json=xp_path + '/results.json')
-    deepSAD.save_model(export_model=xp_path + '/model.tar')
-    cfg.save_config(export_json=xp_path + '/config.json')
+    deepSAD.save_results(export_json=xp_path + f'/{file_name},results.json')
+    deepSAD.save_model(export_model=xp_path + f'/{file_name},model.tar')
+    cfg.save_config(export_json=xp_path + f'/{file_name},config.json')
 
     # Plot most anomalous and most normal test samples
     indices, labels, scores = zip(*deepSAD.results['test_scores'])

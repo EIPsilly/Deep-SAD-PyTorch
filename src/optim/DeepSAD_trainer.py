@@ -75,6 +75,8 @@ class DeepSADTrainer(BaseTrainer):
 
                 # Update network parameters via backpropagation: forward + backward + optimize
                 outputs = net(inputs)
+                if isinstance(outputs, tuple):
+                    outputs = outputs[0]
                 dist = torch.sum((outputs - self.c) ** 2, dim=1)
                 losses = torch.where(semi_targets == 0, dist, self.eta * ((dist + self.eps) ** semi_targets.float()))
                 loss = torch.mean(losses)
@@ -121,6 +123,8 @@ class DeepSADTrainer(BaseTrainer):
                 idx = idx.to(self.device)
 
                 outputs = net(inputs)
+                if isinstance(outputs, tuple):
+                    outputs = outputs[0]
                 dist = torch.sum((outputs - self.c) ** 2, dim=1)
                 losses = torch.where(semi_targets == 0, dist, self.eta * ((dist + self.eps) ** semi_targets.float()))
                 loss = torch.mean(losses)
@@ -142,10 +146,16 @@ class DeepSADTrainer(BaseTrainer):
         labels = np.array(labels)
         scores = np.array(scores)
         self.test_auc = roc_auc_score(labels, scores)
+        
+        from sklearn.metrics import auc, precision_recall_curve
+        precision, recall, threshold = precision_recall_curve(labels, scores)
+        self.test_auprc = auc(recall, precision)
+        
 
         # Log results
         logger.info('Test Loss: {:.6f}'.format(epoch_loss / n_batches))
         logger.info('Test AUC: {:.2f}%'.format(100. * self.test_auc))
+        logger.info('Test AUPRC: {:.2f}%'.format(100. * self.test_auprc))
         logger.info('Test Time: {:.3f}s'.format(self.test_time))
         logger.info('Finished testing.')
 
@@ -161,6 +171,8 @@ class DeepSADTrainer(BaseTrainer):
                 inputs, _, _, _ = data
                 inputs = inputs.to(self.device)
                 outputs = net(inputs)
+                if isinstance(outputs, tuple):
+                    outputs = outputs[0]
                 n_samples += outputs.shape[0]
                 c += torch.sum(outputs, dim=0)
 

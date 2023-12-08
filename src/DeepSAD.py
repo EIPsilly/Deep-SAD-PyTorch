@@ -43,6 +43,7 @@ class DeepSAD(object):
         self.results = {
             'train_time': None,
             'test_auc': None,
+            'test_auprc': None,
             'test_time': None,
             'test_scores': None,
         }
@@ -82,6 +83,7 @@ class DeepSAD(object):
 
         # Get results
         self.results['test_auc'] = self.trainer.test_auc
+        self.results['test_auprc'] = self.trainer.test_auprc
         self.results['test_time'] = self.trainer.test_time
         self.results['test_scores'] = self.trainer.test_scores
 
