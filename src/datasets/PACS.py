@@ -11,7 +11,7 @@ import torchvision.transforms as transforms
 from collections import Counter
 import yaml
 
-with open("/home/hzw/DGAD/domain-generalization-for-anomaly-detection/config.yml", 'r', encoding="utf-8") as f:
+with open("./config.yml", 'r', encoding="utf-8") as f:
     config = yaml.load(f.read(), Loader=yaml.FullLoader)
 
 domain_to_idx = config["PACS_domain_to_idx"]

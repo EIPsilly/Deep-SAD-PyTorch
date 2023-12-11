@@ -7,3 +7,4 @@ results
 *.log
 ResNet-decoder-main
 *.pth
+config.yml

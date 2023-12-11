@@ -14,7 +14,7 @@ from collections import Counter
 import logging
 import yaml
 
-with open("/home/hzw/DGAD/domain-generalization-for-anomaly-detection/config.yml", 'r', encoding="utf-8") as f:
+with open("./config.yml", 'r', encoding="utf-8") as f:
     config = yaml.load(f.read(), Loader=yaml.FullLoader)
 
 
