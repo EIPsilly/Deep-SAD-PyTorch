@@ -62,7 +62,7 @@ class PACSDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         img_path= self.img_paths[idx]
-        img = Image.open(img_path).convert('RGB')
+        img = Image.open(config["PACS_root"] + img_path).convert('RGB')
         img = self.transform(img)
         label = self.labels[idx]
         semi_target = self.semi_targets[idx]
@@ -78,7 +78,7 @@ class PACS_Data():
             normal_class = args["normal_class"]
             anomaly_class = args["anomaly_class"]
         
-        root = f'/home/hzw/DGAD/domain-generalization-for-anomaly-detection/data/20231204-PACS-{"".join(list(map(str,normal_class)))}-{"".join(list(map(str,anomaly_class)))}.npz'
+        root = f'./data/20231204-PACS-{"".join(list(map(str,normal_class)))}-{"".join(list(map(str,anomaly_class)))}.npz'
         self.train_set = PACSDataset(root, normal_class, anomaly_class, train = True)
         self.test_set = PACSDataset(root, normal_class, anomaly_class, train = False)
     
