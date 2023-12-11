@@ -263,3 +263,5 @@ def main(dataset_name, net_name, xp_path, data_path, load_config, load_model, et
 
 if __name__ == '__main__':
     main()
+
+# nohup ./deepsad.sh > deepsad.log 2>&1 &
