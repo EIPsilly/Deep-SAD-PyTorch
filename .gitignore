@@ -9,3 +9,4 @@ ResNet-decoder-main
 *.pth
 config.yml
 data
+analysis

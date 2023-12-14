@@ -137,11 +137,11 @@ def main(dataset_name, net_name, xp_path, data_path, load_config, load_model, et
 
     # Set seed
     if cfg.settings['seed'] != -1:
-        random.seed(cfg.settings['seed'])
-        np.random.seed(cfg.settings['seed'])
-        torch.manual_seed(cfg.settings['seed'])
-        torch.cuda.manual_seed(cfg.settings['seed'])
-        torch.backends.cudnn.deterministic = True
+        # random.seed(cfg.settings['seed'])
+        # np.random.seed(cfg.settings['seed'])
+        # torch.manual_seed(cfg.settings['seed'])
+        # torch.cuda.manual_seed(cfg.settings['seed'])
+        # torch.backends.cudnn.deterministic = True
         logger.info('Set seed to %d.' % cfg.settings['seed'])
 
     # Default device to 'cpu' if cuda is not available
@@ -263,5 +263,3 @@ def main(dataset_name, net_name, xp_path, data_path, load_config, load_model, et
 
 if __name__ == '__main__':
     main()
-
-# nohup ./deepsad.sh > deepsad.log 2>&1 &
